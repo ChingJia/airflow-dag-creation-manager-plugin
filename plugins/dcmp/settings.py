@@ -18,7 +18,8 @@ except Exception as e:
 
 HOSTNAME = socket.gethostname()
 AIRFLOW_DAGS_FOLDER = configuration.get('core', 'DAGS_FOLDER')
-DAG_CREATION_MANAGER_DEPLOYED_DAGS_FOLDER = os.path.join(AIRFLOW_DAGS_FOLDER, "deployedDags")
+# DAG_CREATION_MANAGER_DEPLOYED_DAGS_FOLDER = os.path.join(os.path.split(AIRFLOW_DAGS_FOLDER)[0], "dcmp_dags")
+DAG_CREATION_MANAGER_DEPLOYED_DAGS_FOLDER = configuration.get('dag_creation_manager', "DAG_CREATION_MANAGER_DAGS_FOLDER")
 DAG_CREATION_MANAGER_QUEUE_POOL_STR = configuration.get('dag_creation_manager', 'DAG_CREATION_MANAGER_QUEUE_POOL')
 
 DAG_CREATION_MANAGER_QUEUE_POOL = []

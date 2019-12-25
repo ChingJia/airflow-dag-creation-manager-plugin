@@ -13,7 +13,7 @@ import airflow
 from airflow.plugins_manager import AirflowPlugin
 from airflow.www_rbac.app import csrf
 from airflow.utils.db import provide_session
-from flask import Blueprint, Markup, request, jsonify, flash, g, Response
+from flask import Blueprint, Markup, request, jsonify, flash, g, Response, redirect, url_for
 
 from flask_appbuilder import BaseView, expose
 from flask_admin.babel import gettext
@@ -31,11 +31,12 @@ def login_required(func):
 # when airflow loads plugins, login is still None.
     @wraps(func)
     def func_wrapper(*args, **kwargs):
-        if airflow.login:
-            return airflow.login.login_required(func)(*args, **kwargs)
-        return func(*args, **kwargs)
+        user = get_current_user()
+        if user.is_anonymous:
+            return redirect(url_for('Airflow.index'))
+        else:
+            return func(*args, **kwargs)
     return func_wrapper
-
 
 def get_current_user(raw=True):
     return g.user
@@ -48,8 +49,6 @@ def need_approver():
     current_user = get_current_user(raw=False)
     if not current_user:
         return False
-    if not hasattr(current_user, "is_approver"):
-        return False
     return True
 
 
@@ -57,7 +56,7 @@ def can_access_approver():
     if not need_approver():
         return True
     current_user = get_current_user(raw=False)
-    return not current_user.is_anonymous() and current_user.is_approver()
+    return not current_user.is_anonymous
 
 
 def pygment_html_render(s, lexer=lexers.TextLexer):
@@ -66,7 +65,6 @@ def pygment_html_render(s, lexer=lexers.TextLexer):
         lexer(),
         HtmlFormatter(linenos=True),
     )
-
 
 def render(obj, lexer):
     out = ""

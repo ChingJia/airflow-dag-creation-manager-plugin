@@ -18,7 +18,7 @@ from airflow.operators.sensors import TimeSensor, TimeDeltaSensor
 from airflow.utils.email import send_email
 
 try:
-    from airflow.operators.sensors import NamedHivePartitionSensor
+    from airflow.sensors.named_hive_partition_sensor import NamedHivePartitionSensor
 except ImportError as e:
     from airflow.sensors import NamedHivePartitionSensor # Airflow 1.10
 
