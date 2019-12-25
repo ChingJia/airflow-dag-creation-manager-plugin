@@ -11,11 +11,13 @@ from collections import OrderedDict
 
 import airflow
 from airflow.plugins_manager import AirflowPlugin
-from airflow.www.app import csrf
+from airflow.www_rbac.app import csrf
 from airflow.utils.db import provide_session
 from flask import Blueprint, Markup, request, jsonify, flash
-from flask_admin import BaseView, expose
+
+from flask_appbuilder import BaseView, expose
 from flask_admin.babel import gettext
+
 from pygments import highlight, lexers
 from pygments.formatters import HtmlFormatter
 
@@ -197,11 +199,14 @@ class DagCreationManager(BaseView):
         "tasks": [],
     }
 
+    def render(self, *args, **kwargs):
+        return self.render_template(*args, **kwargs)
+
     @expose("/")
     @expose("/list")
     @login_required
     @provide_session
-    def index(self, session=None):
+    def list(self, session=None):
         TASK_NAME = "Task Name"
         COMMAND = "Command"
         request_args_filter = RequestArgsFilter(DcmpDag, request.args, (
@@ -442,13 +447,33 @@ class DagCreationManager(BaseView):
         try:
             conf = json.loads(conf)
             conf = dag_converter.clean_dag_dict(conf)
+            dag_name = conf.get("dag_name")
+            if dag_name:
+                dcmp_dag = session.query(DcmpDag).filter(
+                    DcmpDag.dag_name == dag_name,
+                ).first()
+                if dcmp_dag:
+                    dcmp_dag_confs = session.query(DcmpDagConf).filter(
+                        DcmpDagConf.dag_id == dcmp_dag.id,
+                    ).order_by(DcmpDagConf.version.desc())
+                    dcmp_dag_confs = dcmp_dag_confs[:]
+                    for i, dcmp_dag_conf in enumerate(dcmp_dag_confs):
+                        if dcmp_dag_conf.version == dcmp_dag.version:
+                            dcmp_dag_confs[0], dcmp_dag_confs[i] = dcmp_dag_confs[i], dcmp_dag_confs[0]
+                            break
+                else:
+                    return Response("not found dag: {}".format(dag_name))
+            else:
+                return Response("not found dag")
         except Exception as e:
             conf = self.DEFAULT_CONF
         return self.render("dcmp/graph_display.html",
-            readonly=True,
-            conf=conf,
-            active_job_id=active_job_id,
-            **self.CONSTANT_KWS)
+                           readonly=True,
+                           conf=conf,
+                           active_job_id=active_job_id,
+                           dcmp_dag=dcmp_dag,
+                           dcmp_dag_confs=dcmp_dag_confs,
+                           **self.CONSTANT_KWS)
 
     @expose("/params")
     @provide_session
@@ -599,7 +624,6 @@ class DagCreationManager(BaseView):
         return res
 
 
-dag_creation_manager_view = DagCreationManager(category="Admin", name="DAG Creation Manager")
 
 dag_creation_manager_bp = Blueprint(
     "dag_creation_manager_bp",
@@ -609,6 +633,10 @@ dag_creation_manager_bp = Blueprint(
     static_url_path="/static/dcmp"
 )
 
+dag_creation_manager_view = {"name": "Dag Create Manage",
+    "category": "CreateDAG",
+    "view": DagCreationManager()}
+
 
 class DagCreationManagerPlugin(AirflowPlugin):
     name = "dag_creation_manager"
@@ -616,5 +644,5 @@ class DagCreationManagerPlugin(AirflowPlugin):
     flask_blueprints = [dag_creation_manager_bp]
     hooks = []
     executors = []
-    admin_views = [dag_creation_manager_view]
     menu_links = []
+    appbuilder_views = [dag_creation_manager_view]

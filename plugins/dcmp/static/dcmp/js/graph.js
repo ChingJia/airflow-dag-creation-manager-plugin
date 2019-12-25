@@ -496,10 +496,10 @@
         var change_widecreen = function(is_widescreen) {
             if(is_widescreen){
                 $(".container").addClass("widescreen");
-                $("#svg_container svg").attr("height", 800);
+                $("#svg_container svg").attr("height", 600);
             }else{
                 $(".container").removeClass("widescreen");
-                $("#svg_container svg").attr("height", 700);
+                $("#svg_container svg").attr("height", 300);
             }
         };
         $("#wide-screen").change(function() {

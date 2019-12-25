@@ -1,11 +1,9 @@
 {% extends "airflow/master.html" %}
-{% import 'admin/lib.html' as lib with context %}
 
 {% block title %}DAG Config - {{ conf.dag_name }}{% endblock %}
 
 {% block head %}
     {{ super() }}
-    {{ lib.form_css() }}
     <link href="{{ url_for("static", filename="bootstrap-toggle.min.css") }}" rel="stylesheet" type="text/css">
     <link href="{{ url_for('dag_creation_manager_bp.static', filename='dcmp/css/jquery-ui.css') }}" type="text/css" rel="stylesheet" media="all">
     <link href="{{ url_for('dag_creation_manager_bp.static', filename='dcmp/css/edit.css') }}" rel="stylesheet" type="text/css">
@@ -65,12 +63,11 @@
 
 {% block tail %}
     {{ super() }}
-    {{ lib.form_js() }}
     <script language="javascript">
         window.readonly = {% if readonly %}true{% else %}false{% endif %};
         window.dag_name = "{{ conf.dag_name }}";
-        window.refresh_url_template = '{{ url_for("airflow.refresh", dag_id="DAG_ID") }}';
-        window.graph_url_template = '{{ url_for("airflow.graph", dag_id="DAG_ID") }}';
+        window.refresh_url_template = '{{ url_for("Airflow.refresh", dag_id="DAG_ID") }}';
+        window.graph_url_template = '{{ url_for("Airflow.graph", dag_id="DAG_ID") }}';
         window.loading_img_url = '{{ url_for("static", filename="loading.gif") }}';
         window.queue_pools = {{ DAG_CREATION_MANAGER_QUEUE_POOL|tojson }};
         window.task_types = {{ TASK_TYPES|tojson }};
@@ -84,7 +81,7 @@
         }
         window.conf = {{ conf|tojson }};
     </script>
-    <script src="{{ url_for('static', filename='bootstrap-toggle.min.js') }}"></script>
+    <script src="{{ url_for_asset('bootstrap-toggle.min.js') }}"></script>
     <script src="{{ url_for('dag_creation_manager_bp.static', filename='dcmp/js/js.cookie.js') }}"></script>
     <script src="{{ url_for('dag_creation_manager_bp.static', filename='dcmp/js/ace.js') }}"></script>
     <script src="{{ url_for('dag_creation_manager_bp.static', filename='dcmp/js/mode-sql.js') }}"></script>

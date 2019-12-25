@@ -1,11 +1,9 @@
 {% extends "airflow/master.html" %}
-{% import 'admin/lib.html' as lib with context %}
 
 {% block title %}DAG Configs{% endblock %}
 
 {% block head %}
     {{ super() }}
-    {{ lib.form_css() }}
     <style>
         span.highlighted{
             background: #F1C40F;
@@ -165,8 +163,6 @@
 
 {% block tail %}
 {{ super() }}
-<script src="{{ admin_static.url(filename='admin/js/filters.js', v='1.0.0') }}"></script>
-{{ lib.form_js() }}
 <script language="javascript">
     (function($) {
         {% if filter_groups %}
@@ -178,7 +174,7 @@
         {% endif %}
     })(jQuery);
 </script>
-<script src="{{ url_for('static', filename='d3.v3.min.js') }}"></script>
+<script src="{{ url_for_asset('d3.min.js') }}"></script>
 <script language="javascript">
     (function($) {
         $(".link-tooltip").tooltip();
@@ -187,7 +183,7 @@
         circle_margin = 4;
         stroke_width = 2;
         stroke_width_hover = 6;
-        d3.json("{{ url_for('airflow.task_stats') }}", function(error, json) {
+        d3.json("{{ url_for('Airflow.task_stats') }}", function(error, json) {
             for(var dag_id in json) {
                 states = json[dag_id];
                 g = d3.select('svg#task-run-' + dag_id)
@@ -265,7 +261,7 @@
                 container: "body",
             });
         });
-        d3.json("{{ url_for('airflow.dag_stats') }}", function(error, json) {
+        d3.json("{{ url_for('Airflow.dag_stats') }}", function(error, json) {
             for(var dag_id in json) {
                 states = json[dag_id];
                 g = d3.select('svg#dag-run-' + dag_id)
@@ -368,11 +364,11 @@
 //            var self = this;
 //            $(self).siblings(".loading").show();
 //            $.ajax({
-//                url: '{{ url_for("airflow.refresh", dag_id="DAG_ID") }}'.replace(/DAG_ID/g, $(self).attr("dagname")),
+//                url: '{{ url_for("Airflow.refresh", dag_id="DAG_ID") }}'.replace(/DAG_ID/g, $(self).attr("dagname")),
 //                type: 'GET',
 //                success: function(data){
 //                    $(self).siblings(".loading").hide();
-//                    location.href = '{{ url_for("airflow.graph", dag_id="DAG_ID") }}'.replace(/DAG_ID/g, $(self).attr("dagname"));
+//                    location.href = '{{ url_for("Airflow.graph", dag_id="DAG_ID") }}'.replace(/DAG_ID/g, $(self).attr("dagname"));
 //                },
 //                error: function(data) {
 //                    alert('Failed!');
