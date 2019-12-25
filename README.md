@@ -1,4 +1,4 @@
-# Airflow DAG Creation Manager Plugin
+# Airflow DAG Creation Manager Plugin [**support airflow rbac**]
 
 ### Description
 A plugin for [Apache Airflow](https://github.com/apache/incubator-airflow) that create and manage your DAG with web UI.
