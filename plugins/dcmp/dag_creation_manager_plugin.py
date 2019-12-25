@@ -13,7 +13,7 @@ import airflow
 from airflow.plugins_manager import AirflowPlugin
 from airflow.www_rbac.app import csrf
 from airflow.utils.db import provide_session
-from flask import Blueprint, Markup, request, jsonify, flash
+from flask import Blueprint, Markup, request, jsonify, flash, g, Response
 
 from flask_appbuilder import BaseView, expose
 from flask_admin.babel import gettext
@@ -38,15 +38,7 @@ def login_required(func):
 
 
 def get_current_user(raw=True):
-    try:
-        if raw:
-            res = airflow.login.current_user.user
-        else:
-            res = airflow.login.current_user
-    except Exception as e:
-        res = None
-    return res
-
+    return g.user
 
 def need_approver():
     if not dcmp_settings.AUTHENTICATE:
@@ -446,8 +438,8 @@ class DagCreationManager(BaseView):
         active_job_id = request.form.get("active_job_id", "")
         try:
             conf = json.loads(conf)
+            dag_name = conf.get("dag_name", "")
             conf = dag_converter.clean_dag_dict(conf)
-            dag_name = conf.get("dag_name")
             if dag_name:
                 dcmp_dag = session.query(DcmpDag).filter(
                     DcmpDag.dag_name == dag_name,
@@ -465,8 +457,13 @@ class DagCreationManager(BaseView):
                     return Response("not found dag: {}".format(dag_name))
             else:
                 return Response("not found dag")
+        except ValueError:
+            return Response("lack tasks {}".format(dag_name))
         except Exception as e:
-            conf = self.DEFAULT_CONF
+            import traceback
+            traceback.print_exc()
+            return Response("something wrong! {}".format(e))
+            # conf = self.DEFAULT_CONF
         return self.render("dcmp/graph_display.html",
                            readonly=True,
                            conf=conf,
