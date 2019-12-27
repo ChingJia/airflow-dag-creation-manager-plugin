@@ -68,7 +68,7 @@ Date.prototype.Format = function (fmt) { //author: meizz
             field_html = ['<span name="' + field_name + '" class="btn-group btn-group-input btn-group-input-single">'];
             for(var i=0; i<queue_pools.length; i++){
                 var queue_pool = queue_pools[i][0];
-                field_html.push('<button type="button" class="btn btn-item ' + (queue_pool == task[field_name]? 'active': '') + '" field-value="' + queue_pool + '">' + queue_pool.split("_").join(" ") + ' queue</button>');
+                field_html.push('<button type="button" class="btn btn-item ' + (queue_pool == task[field_name]? 'active': '') + '" field-value="' + queue_pool + '">' + queue_pool + '</button>');
             }
             field_html.push('</span>');
             field_html = field_html.join("\n");

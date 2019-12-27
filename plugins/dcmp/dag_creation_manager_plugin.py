@@ -41,6 +41,29 @@ def login_required(func):
 def get_current_user(raw=True):
     return g.user
 
+def get_user_queue():
+    user = g.user
+    result = []
+    if user and hasattr(user, "queue") and user.queue:
+        try:
+            queue_pool_strs = user.queue.split(",")
+            for queue_pool_str in queue_pool_strs:
+                key, queue_pool = queue_pool_str.split(":")
+                queue, pool = queue_pool.split("|")
+                result.append((key, (queue, pool)))
+        except Exception:
+            #TODO add log
+            result.append(("config-wrong-please-contact-airflow-admin", ("warn", "default_pool")))
+    else:
+        result.append(("please-contact-airflow-admin", ("warn", "default_pool")))
+    return result
+
+def set_user_queue_pool():
+    dcmp_settings.DAG_CREATION_MANAGER_QUEUE_POOL.clear()
+    dcmp_settings.DAG_CREATION_MANAGER_QUEUE_POOL.extend(get_user_queue())
+    dcmp_settings.DAG_CREATION_MANAGER_QUEUE_POOL_DICT.clear()
+    dcmp_settings.DAG_CREATION_MANAGER_QUEUE_POOL_DICT.update(**dict(dcmp_settings.DAG_CREATION_MANAGER_QUEUE_POOL))
+
 def need_approver():
     if not dcmp_settings.AUTHENTICATE:
         return False
@@ -288,6 +311,8 @@ class DagCreationManager(BaseView):
                 conf = None
         if conf is None:
             conf = self.DEFAULT_CONF
+
+        set_user_queue_pool()
         return self.render(template,
             can_access_approver=can_access_approver(),
             need_approver=need_approver(),
@@ -462,6 +487,7 @@ class DagCreationManager(BaseView):
             traceback.print_exc()
             return Response("something wrong! {}".format(e))
             # conf = self.DEFAULT_CONF
+        set_user_queue_pool()
         return self.render("dcmp/graph_display.html",
                            readonly=True,
                            conf=conf,
@@ -498,6 +524,7 @@ class DagCreationManager(BaseView):
             else:
                 return jsonify({"code": -1, "detail": "dag name required", })
         elif api == "update_dag":
+            set_user_queue_pool()
             dag_name = request.args.get("dag_name")
             data = request.get_json()
             try:
@@ -514,6 +541,7 @@ class DagCreationManager(BaseView):
                 ).first()
                 if dcmp_dag:
                     return jsonify({"code": -3, "detail": "dag name duplicated", })
+            set_user_queue_pool()
             DcmpDag.create_or_update_conf(data, user=user, session=session)
             if new_dag_name != dag_name and dag_name:
                 dcmp_dag = session.query(DcmpDag).filter(
@@ -547,6 +575,7 @@ class DagCreationManager(BaseView):
                         return jsonify({"code": -6, "detail": "can not approve yourself", })
                     dcmp_dag.approve_conf(version=version, user=user, session=session)
                     session.commit()
+                    set_user_queue_pool()
                     dag_converter.refresh_dags()
                     return jsonify({"code": 0, "detail": "succeeded", })
                 else:
@@ -574,6 +603,7 @@ class DagCreationManager(BaseView):
         elif api == "render_task_conf":
             data = request.get_json()
             try:
+                set_user_queue_pool()
                 ti = dag_converter.create_task_instance_by_task_conf(data)
             except Exception as e:
                 logging.exception("api.render_task_conf")
@@ -583,6 +613,7 @@ class DagCreationManager(BaseView):
         elif api == "dry_run_task_conf":
             data = request.get_json()
             try:
+                set_user_queue_pool()
                 ti = dag_converter.create_task_instance_by_task_conf(data)
             except Exception as e:
                 logging.exception("api.dry_run_task_conf")
@@ -610,7 +641,9 @@ class DagCreationManager(BaseView):
         for template_field in ti.task.__class__.template_fields:
             res[template_field] = {"code": getattr(ti.task, template_field)}
         if result_format == "html":
-            from airflow.www.views import attr_renderer # can not load views when airflow loads plugins.
+            #from airflow.www.views import attr_renderer # can not load views when airflow loads plugins.
+            from airflow.www_rbac.utils import get_attr_renderer
+            attr_renderer = get_attr_renderer()
             for template_field, content in res.items():
                 if template_field in attr_renderer:
                     content["html"] = attr_renderer[template_field](content["code"])
