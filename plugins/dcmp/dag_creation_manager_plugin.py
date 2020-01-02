@@ -227,8 +227,10 @@ class DagCreationManager(BaseView):
             (TASK_NAME, {"operations": ["contains"], "no_filters": True}),
             (COMMAND, {"operations": ["contains"], "no_filters": True}),
         ))
+
+        user = get_current_user()
         confs = OrderedDict()
-        dcmp_dags = session.query(DcmpDag).order_by(DcmpDag.dag_name).filter(*request_args_filter.filters)
+        dcmp_dags = session.query(DcmpDag).filter(DcmpDag.editing_user_name==user.username).order_by(DcmpDag.dag_name).filter(*request_args_filter.filters)
         dcmp_dags_count = dcmp_dags.count()
         dcmp_dags = dcmp_dags[:]
         for dcmp_dag in dcmp_dags:
